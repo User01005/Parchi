@@ -1,0 +1,6 @@
+{
+  "name": "Manmohan Di Hatti",
+  "description": "Voice billing and thermal POS app for Manmohan Di Hatti kirana store.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
