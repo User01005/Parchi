@@ -1,10 +1,5 @@
 package com.example.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,12 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
@@ -39,11 +32,16 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.PastelLavender
+import com.example.ui.theme.PastelLavenderAccent
+import com.example.ui.theme.PastelMint
+import com.example.ui.theme.PastelMintAccent
+import com.example.ui.theme.PastelSky
+import com.example.ui.theme.PastelSkyAccent
 
 /**
  * Bottom controls for Receipt Screen.
- * When not finished: strictly displays ONLY the single Record button with ripple effect.
- * When finished: presents the sleek pill navigation options (Back, Edit, Print, Share).
+ * Uses consistent squircle design language (RoundedCornerShape 16dp) with modern pastel accents.
  */
 @Composable
 fun ReceiptBottomBar(
@@ -61,12 +59,11 @@ fun ReceiptBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         if (!isReceiptFinished || isListening || isProcessing) {
             // STATE 1: Before / While Recording / While Processing
-            // Single Record Button with ripple indicator
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -80,40 +77,27 @@ fun ReceiptBottomBar(
                 )
             }
         } else {
-            // STATE 2: Receipt Completed
-            // Sleek bottom pill navigation options matching reference design
+            // STATE 2: Receipt Completed (Squircle buttons with subtle pastel accents)
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Secondary mic pill if they wish to dictate more
-                if (isListening) {
-                    RippleRecordButton(
-                        isListening = true,
-                        liveTranscript = liveTranscript,
-                        onClick = onRecordClick,
-                        modifier = Modifier
-                            .padding(bottom = 8.dp)
-                            .testTag("receipt_record_active")
-                    )
-                }
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Back Pill Button (< BACK)
+                    // Back Squircle Button (< BACK)
                     Box(
                         modifier = Modifier
                             .weight(0.9f)
                             .height(48.dp)
-                            .shadow(2.dp, RoundedCornerShape(24.dp), spotColor = Color(0x14000000))
-                            .clip(RoundedCornerShape(24.dp))
+                            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x14000000))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(Color.White)
-                            .border(1.2.dp, Color(0xFFE4E4E7), RoundedCornerShape(24.dp))
+                            .border(1.2.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
                             .clickable { onBackClick() }
-                            .padding(horizontal = 12.dp)
+                            .padding(horizontal = 8.dp)
                             .testTag("pill_back_button"),
                         contentAlignment = Alignment.Center
                     ) {
@@ -121,31 +105,31 @@ fun ReceiptBottomBar(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color(0xFF18181B),
+                                tint = Color(0xFF0F172A),
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "BACK",
-                                fontSize = 12.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace,
-                                color = Color(0xFF18181B)
+                                color = Color(0xFF0F172A)
                             )
                         }
                     }
 
-                    // Edit Pill Button (EDIT -> Speak or Manual)
+                    // Edit Squircle Button
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp)
-                            .shadow(2.dp, RoundedCornerShape(24.dp), spotColor = Color(0x14000000))
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Color.White)
-                            .border(1.2.dp, Color(0xFFE4E4E7), RoundedCornerShape(24.dp))
+                            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x14000000))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(PastelLavender)
+                            .border(1.2.dp, PastelLavenderAccent.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                             .clickable { onEditClick() }
-                            .padding(horizontal = 12.dp)
+                            .padding(horizontal = 8.dp)
                             .testTag("pill_edit_button"),
                         contentAlignment = Alignment.Center
                     ) {
@@ -153,31 +137,31 @@ fun ReceiptBottomBar(
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit",
-                                tint = Color(0xFF18181B),
+                                tint = PastelLavenderAccent,
                                 modifier = Modifier.size(15.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "EDIT",
-                                fontSize = 12.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace,
-                                color = Color(0xFF18181B)
+                                color = PastelLavenderAccent
                             )
                         }
                     }
 
-                    // Print Pill Button
+                    // Print Squircle Button
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp)
-                            .shadow(2.dp, RoundedCornerShape(24.dp), spotColor = Color(0x14000000))
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Color.White)
-                            .border(1.2.dp, Color(0xFFE4E4E7), RoundedCornerShape(24.dp))
+                            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0x14000000))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(PastelSky)
+                            .border(1.2.dp, PastelSkyAccent.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                             .clickable { onPrintClick() }
-                            .padding(horizontal = 12.dp)
+                            .padding(horizontal = 8.dp)
                             .testTag("pill_print_button"),
                         contentAlignment = Alignment.Center
                     ) {
@@ -185,30 +169,31 @@ fun ReceiptBottomBar(
                             Icon(
                                 imageVector = Icons.Default.Print,
                                 contentDescription = "Print",
-                                tint = Color(0xFF18181B),
+                                tint = PastelSkyAccent,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "PRINT",
-                                fontSize = 12.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace,
-                                color = Color(0xFF18181B)
+                                color = PastelSkyAccent
                             )
                         }
                     }
 
-                    // Share Pill Button (Black solid pill from reference design)
+                    // Share Squircle Button
                     Box(
                         modifier = Modifier
                             .weight(1.1f)
                             .height(48.dp)
-                            .shadow(4.dp, RoundedCornerShape(24.dp), spotColor = Color(0x28000000))
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Color(0xFF18181B))
+                            .shadow(4.dp, RoundedCornerShape(16.dp), spotColor = Color(0x20000000))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(PastelMint)
+                            .border(1.2.dp, PastelMintAccent.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                             .clickable { onShareClick() }
-                            .padding(horizontal = 14.dp)
+                            .padding(horizontal = 10.dp)
                             .testTag("pill_share_button"),
                         contentAlignment = Alignment.Center
                     ) {
@@ -216,16 +201,16 @@ fun ReceiptBottomBar(
                             Icon(
                                 imageVector = Icons.Default.Share,
                                 contentDescription = "Share",
-                                tint = Color.White,
+                                tint = PastelMintAccent,
                                 modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "SHARE",
-                                fontSize = 12.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace,
-                                color = Color.White
+                                color = PastelMintAccent
                             )
                         }
                     }

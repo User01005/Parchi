@@ -1,12 +1,17 @@
 package com.example.ui
 
 import android.app.Application
+import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ai.GeminiBillParser
 import com.example.data.AppDatabase
 import com.example.data.BillRepository
 import com.example.model.BillEntity
 import com.example.model.BillItem
+import com.example.parser.ParseResult
 import com.example.parser.VoiceBillParser
 import com.example.voice.VoiceInputManager
 import kotlinx.coroutines.delay
@@ -17,34 +22,36 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 
 enum class AppScreen {
+    Onboarding,
     Home,
     Receipt
 }
 
 enum class HomeNavTab {
     Receipts,
-    Create,
-    DailySales
+    DailySales,
+    Profile
 }
 
 data class BillUiState(
     val currentScreen: AppScreen = AppScreen.Home,
     val selectedHomeTab: HomeNavTab = HomeNavTab.Receipts,
     val searchQuery: String = "",
+    val isSearchExpanded: Boolean = false,
     val storeName: String = "Manmohan Di Hatti",
+    val storeCategory: String = "Kirana & General Store",
+    val storePhone: String = "",
     val billNumber: String = generateBillNumber(),
     val formattedDateTime: String = getFormattedCurrentDateTime(),
     val customerName: String = "",
     val customerPhone: String = "",
     val customerHouseNo: String = "",
-    val items: List<BillItem> = emptyList(), // Starts empty as requested
+    val items: List<BillItem> = emptyList(),
     val isListening: Boolean = false,
     val isProcessing: Boolean = false,
     val liveTranscript: String = "",
@@ -52,7 +59,7 @@ data class BillUiState(
     val statusMessage: String? = null,
     val showCustomerEditDialog: Boolean = false,
     val editingItem: BillItem? = null,
-    val showEditOptionsDialog: Boolean = false, // Speak or Manual
+    val showEditOptionsDialog: Boolean = false,
     val showManualEditSheet: Boolean = false,
     val isReceiptFinished: Boolean = false,
     val currentViewingBillId: Long? = null
@@ -68,11 +75,11 @@ data class BillUiState(
 
     companion object {
         fun generateBillNumber(): String {
-            return String.format("%04d", (1..9999).random())
+            return String.format(Locale.US, "%04d", (1..9999).random())
         }
 
         fun getFormattedCurrentDateTime(): String {
-            return SimpleDateFormat("dd MMM yyyy • hh:mm a", Locale.getDefault()).format(Date()).uppercase()
+            return SimpleDateFormat("dd MMM yyyy • hh:mm a", Locale.getDefault()).format(Date()).uppercase(Locale.getDefault())
         }
     }
 }
@@ -81,18 +88,31 @@ class BillViewModel(application: Application) : AndroidViewModel(application) {
 
     val repository: BillRepository
     private var voiceInputManager: VoiceInputManager? = null
+    private val prefs: SharedPreferences = application.getSharedPreferences("parchi_prefs", Context.MODE_PRIVATE)
 
     private val _uiState = MutableStateFlow(BillUiState())
     val uiState: StateFlow<BillUiState> = _uiState.asStateFlow()
 
     val savedBills: StateFlow<List<BillEntity>>
-
-    // Filtered bills based on real-time search query
     val filteredBills: StateFlow<List<BillEntity>>
 
     init {
         val database = AppDatabase.getInstance(application)
         repository = BillRepository(database.billDao())
+
+        // Load onboarding status & store settings
+        val isOnboarded = prefs.getBoolean("onboarding_completed", false)
+        val savedStoreName = prefs.getString("store_name", "Manmohan Di Hatti") ?: "Manmohan Di Hatti"
+        val savedCategory = prefs.getString("store_category", "Kirana & General Store") ?: "Kirana & General Store"
+        val savedPhone = prefs.getString("store_phone", "") ?: ""
+
+        _uiState.value = _uiState.value.copy(
+            currentScreen = if (isOnboarded) AppScreen.Home else AppScreen.Onboarding,
+            storeName = savedStoreName,
+            storeCategory = savedCategory,
+            storePhone = savedPhone
+        )
+
         savedBills = repository.allBills.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -100,17 +120,17 @@ class BillViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         filteredBills = combine(savedBills, _uiState) { bills, state ->
-            val query = state.searchQuery.trim().lowercase()
+            val query = state.searchQuery.trim().lowercase(Locale.getDefault())
             if (query.isEmpty()) {
                 bills
             } else {
                 bills.filter { bill ->
-                    bill.billNumber.lowercase().contains(query) ||
-                    bill.customerName.lowercase().contains(query) ||
-                    bill.customerPhone.lowercase().contains(query) ||
-                    bill.customerHouseNo.lowercase().contains(query) ||
-                    bill.dateDisplay.lowercase().contains(query) ||
-                    bill.itemsJson.lowercase().contains(query)
+                    bill.billNumber.lowercase(Locale.getDefault()).contains(query) ||
+                    bill.customerName.lowercase(Locale.getDefault()).contains(query) ||
+                    bill.customerPhone.lowercase(Locale.getDefault()).contains(query) ||
+                    bill.customerHouseNo.lowercase(Locale.getDefault()).contains(query) ||
+                    bill.dateDisplay.lowercase(Locale.getDefault()).contains(query) ||
+                    bill.itemsJson.lowercase(Locale.getDefault()).contains(query)
                 }
             }
         }.stateIn(
@@ -120,16 +140,53 @@ class BillViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    fun completeOnboarding(businessName: String, category: String, phone: String) {
+        val cleanName = businessName.trim().ifEmpty { "Manmohan Di Hatti" }
+        prefs.edit()
+            .putBoolean("onboarding_completed", true)
+            .putString("store_name", cleanName)
+            .putString("store_category", category)
+            .putString("store_phone", phone.trim())
+            .apply()
+
+        _uiState.value = _uiState.value.copy(
+            currentScreen = AppScreen.Home,
+            storeName = cleanName,
+            storeCategory = category,
+            storePhone = phone.trim()
+        )
+    }
+
+    fun updateStoreProfile(businessName: String, category: String, phone: String) {
+        val cleanName = businessName.trim().ifEmpty { "Manmohan Di Hatti" }
+        prefs.edit()
+            .putString("store_name", cleanName)
+            .putString("store_category", category)
+            .putString("store_phone", phone.trim())
+            .apply()
+
+        _uiState.value = _uiState.value.copy(
+            storeName = cleanName,
+            storeCategory = category,
+            storePhone = phone.trim(),
+            statusMessage = "Store details saved"
+        )
+    }
+
+    fun toggleSearch() {
+        val newExpanded = !_uiState.value.isSearchExpanded
+        _uiState.value = _uiState.value.copy(
+            isSearchExpanded = newExpanded,
+            searchQuery = if (!newExpanded) "" else _uiState.value.searchQuery
+        )
+    }
+
     fun updateSearchQuery(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
     }
 
     fun selectHomeTab(tab: HomeNavTab) {
-        if (tab == HomeNavTab.Create) {
-            startNewReceipt()
-        } else {
-            _uiState.value = _uiState.value.copy(selectedHomeTab = tab)
-        }
+        _uiState.value = _uiState.value.copy(selectedHomeTab = tab)
     }
 
     fun navigateToHome() {
@@ -146,12 +203,14 @@ class BillViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = BillUiState(
             currentScreen = AppScreen.Receipt,
             storeName = _uiState.value.storeName,
+            storeCategory = _uiState.value.storeCategory,
+            storePhone = _uiState.value.storePhone,
             billNumber = BillUiState.generateBillNumber(),
             formattedDateTime = BillUiState.getFormattedCurrentDateTime(),
             customerName = "",
             customerPhone = "",
             customerHouseNo = "",
-            items = emptyList(), // Clean fresh empty receipt
+            items = emptyList(),
             isReceiptFinished = false,
             currentViewingBillId = null
         )
@@ -191,38 +250,52 @@ class BillViewModel(application: Application) : AndroidViewModel(application) {
             statusMessage = null
         )
 
-        val context = getApplication<Application>().applicationContext
-        voiceInputManager?.destroy()
-        voiceInputManager = VoiceInputManager(
-            context = context,
-            onPartialResult = { partial ->
-                _uiState.value = _uiState.value.copy(liveTranscript = partial)
-            },
-            onFinalResult = { finalResult ->
-                if (finalResult.isNotBlank()) {
-                    sessionTranscriptBuilder.append(" ").append(finalResult.trim())
-                    _uiState.value = _uiState.value.copy(liveTranscript = finalResult)
+        try {
+            val context = getApplication<Application>().applicationContext
+            voiceInputManager?.destroy()
+            voiceInputManager = VoiceInputManager(
+                context = context,
+                onPartialResult = { partial ->
+                    _uiState.value = _uiState.value.copy(liveTranscript = partial)
+                },
+                onFinalResult = { finalResult ->
+                    if (finalResult.isNotBlank()) {
+                        sessionTranscriptBuilder.append(" ").append(finalResult.trim())
+                        _uiState.value = _uiState.value.copy(liveTranscript = finalResult)
+                    }
+                },
+                onError = { error ->
+                    Log.d("BillViewModel", "Voice recognizer event: $error")
+                    if (error.contains("permission", ignoreCase = true)) {
+                        _uiState.value = _uiState.value.copy(
+                            isListening = false,
+                            isProcessing = false,
+                            statusMessage = "Microphone permission required"
+                        )
+                    }
+                },
+                onRmsChanged = { rms ->
+                    _uiState.value = _uiState.value.copy(rmsLevel = rms)
                 }
-            },
-            onError = { error ->
-                Log.d("BillViewModel", "Voice recognizer event: $error")
-                if (error.contains("permission", ignoreCase = true)) {
-                    _uiState.value = _uiState.value.copy(
-                        isListening = false,
-                        isProcessing = false,
-                        statusMessage = "Microphone permission required"
-                    )
-                }
-            },
-            onRmsChanged = { rms ->
-                _uiState.value = _uiState.value.copy(rmsLevel = rms)
-            }
-        )
-        voiceInputManager?.startListening()
+            )
+            voiceInputManager?.startListening()
+        } catch (e: Exception) {
+            Log.e("BillViewModel", "Error starting voice recognition", e)
+            _uiState.value = _uiState.value.copy(
+                isListening = false,
+                isProcessing = false,
+                statusMessage = "Could not start microphone"
+            )
+        }
     }
 
     fun stopVoiceRecording() {
-        voiceInputManager?.stopListening()
+        try {
+            voiceInputManager?.stopListening()
+        } catch (e: Exception) {
+            Log.w("BillViewModel", "Error stopping voiceInputManager", e)
+        }
+
         val pendingTranscript = _uiState.value.liveTranscript.trim()
         if (pendingTranscript.isNotBlank() && !sessionTranscriptBuilder.contains(pendingTranscript)) {
             sessionTranscriptBuilder.append(" ").append(pendingTranscript)
@@ -238,13 +311,16 @@ class BillViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             viewModelScope.launch {
-                // Batch processing: wait 2 to 3 seconds as requested before displaying the finalized list
-                delay(2400)
-                processSpeechTranscript(fullSessionAudio)
-                _uiState.value = _uiState.value.copy(
-                    isProcessing = false,
-                    isReceiptFinished = _uiState.value.items.isNotEmpty()
-                )
+                try {
+                    processSpeechTranscript(fullSessionAudio)
+                } catch (e: Throwable) {
+                    Log.e("BillViewModel", "Exception while processing voice recording", e)
+                } finally {
+                    _uiState.value = _uiState.value.copy(
+                        isProcessing = false,
+                        isReceiptFinished = _uiState.value.items.isNotEmpty()
+                    )
+                }
             }
         } else {
             _uiState.value = _uiState.value.copy(
@@ -256,42 +332,44 @@ class BillViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun processSpeechTranscript(transcript: String) {
+    suspend fun processSpeechTranscript(transcript: String) {
         if (transcript.isBlank()) return
 
-        val currentItems = _uiState.value.items.toMutableList()
-        val nextSerial = currentItems.size + 1
+        try {
+            val currentItems = _uiState.value.items.toMutableList()
+            val nextSerial = currentItems.size + 1
 
-        val parseResult = VoiceBillParser.parseTranscript(transcript, startingSerial = nextSerial)
+            val parseResult = GeminiBillParser.parseWithGeminiOrFallback(transcript, startingSerial = nextSerial)
 
-        // Update customer details if spoken
-        var updatedCustomerName = _uiState.value.customerName
-        var updatedCustomerPhone = _uiState.value.customerPhone
-        var updatedCustomerHouseNo = _uiState.value.customerHouseNo
+            var updatedCustomerName = _uiState.value.customerName
+            var updatedCustomerPhone = _uiState.value.customerPhone
+            var updatedCustomerHouseNo = _uiState.value.customerHouseNo
 
-        parseResult.customerInfo.name?.let { updatedCustomerName = it }
-        parseResult.customerInfo.phone?.let { updatedCustomerPhone = it }
-        parseResult.customerInfo.houseNo?.let { updatedCustomerHouseNo = it }
+            parseResult.customerInfo.name?.let { updatedCustomerName = it }
+            parseResult.customerInfo.phone?.let { updatedCustomerPhone = it }
+            parseResult.customerInfo.houseNo?.let { updatedCustomerHouseNo = it }
 
-        currentItems.addAll(parseResult.items)
+            currentItems.addAll(parseResult.items)
 
-        val reindexed = currentItems.mapIndexed { index, item ->
-            item.copy(serialNumber = index + 1)
-        }
+            val reindexed = currentItems.mapIndexed { index, item ->
+                item.copy(serialNumber = index + 1)
+            }
 
-        _uiState.value = _uiState.value.copy(
-            items = reindexed,
-            customerName = updatedCustomerName,
-            customerPhone = updatedCustomerPhone,
-            customerHouseNo = updatedCustomerHouseNo,
-            statusMessage = null, // Silent, clean UI
-            liveTranscript = "",
-            isReceiptFinished = reindexed.isNotEmpty()
-        )
+            _uiState.value = _uiState.value.copy(
+                items = reindexed,
+                customerName = updatedCustomerName,
+                customerPhone = updatedCustomerPhone,
+                customerHouseNo = updatedCustomerHouseNo,
+                statusMessage = null,
+                liveTranscript = "",
+                isReceiptFinished = reindexed.isNotEmpty()
+            )
 
-        // Automatically save receipt to Room database
-        if (reindexed.isNotEmpty()) {
-            saveCurrentReceiptSilently()
+            if (reindexed.isNotEmpty()) {
+                saveCurrentReceiptSilently()
+            }
+        } catch (e: Throwable) {
+            Log.e("BillViewModel", "processSpeechTranscript error", e)
         }
     }
 
@@ -402,25 +480,33 @@ class BillViewModel(application: Application) : AndroidViewModel(application) {
         if (state.items.isEmpty()) return
 
         viewModelScope.launch {
-            val id = repository.saveBill(
-                billNumber = state.billNumber,
-                formattedDateTime = state.formattedDateTime,
-                customerName = state.customerName,
-                customerPhone = state.customerPhone,
-                customerHouseNo = state.customerHouseNo,
-                items = state.items,
-                totalAmount = state.totalAmount,
-                isVerified = state.isAllVerified
-            )
-            _uiState.value = _uiState.value.copy(currentViewingBillId = id)
+            try {
+                val id = repository.saveBill(
+                    billNumber = state.billNumber,
+                    formattedDateTime = state.formattedDateTime,
+                    customerName = state.customerName,
+                    customerPhone = state.customerPhone,
+                    customerHouseNo = state.customerHouseNo,
+                    items = state.items,
+                    totalAmount = state.totalAmount,
+                    isVerified = state.isAllVerified
+                )
+                _uiState.value = _uiState.value.copy(currentViewingBillId = id)
+            } catch (e: Exception) {
+                Log.e("BillViewModel", "Error saving bill to database", e)
+            }
         }
     }
 
     fun deleteSavedBill(entity: BillEntity) {
         viewModelScope.launch {
-            repository.deleteBill(entity)
-            if (_uiState.value.currentViewingBillId == entity.id) {
-                navigateToHome()
+            try {
+                repository.deleteBill(entity)
+                if (_uiState.value.currentViewingBillId == entity.id) {
+                    navigateToHome()
+                }
+            } catch (e: Exception) {
+                Log.e("BillViewModel", "Error deleting bill", e)
             }
         }
     }
@@ -431,6 +517,8 @@ class BillViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        voiceInputManager?.destroy()
+        try {
+            voiceInputManager?.destroy()
+        } catch (_: Exception) {}
     }
 }

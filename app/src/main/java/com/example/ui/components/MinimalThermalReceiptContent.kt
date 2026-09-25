@@ -51,6 +51,7 @@ import com.example.model.BillItem
  */
 @Composable
 fun MinimalThermalReceiptContent(
+    storeName: String = "MANMOHAN DI HATTI",
     dateTime: String,
     billNumber: String,
     customerName: String,
@@ -71,7 +72,7 @@ fun MinimalThermalReceiptContent(
     ) {
         // Store Name Header
         Text(
-            text = "MANMOHAN DI HATTI",
+            text = storeName.uppercase(java.util.Locale.getDefault()),
             fontSize = 14.sp,
             fontWeight = FontWeight.Black,
             fontFamily = FontFamily.Monospace,

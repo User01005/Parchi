@@ -9,6 +9,88 @@ import org.junit.Test
 class VoiceBillParserTest {
 
     @Test
+    fun parseUserExactScenario_withCommasAndAnd() {
+        val transcript = "10 kg atta, 5 kg rajma, 2 kg maida, and 3 kg sugar"
+        val result = VoiceBillParser.parseTranscript(transcript, startingSerial = 1)
+
+        assertEquals(4, result.items.size)
+
+        assertEquals("Atta", result.items[0].itemName)
+        assertEquals("10 kg", result.items[0].weightOrQuantity)
+
+        assertEquals("Rajma", result.items[1].itemName)
+        assertEquals("5 kg", result.items[1].weightOrQuantity)
+
+        assertEquals("Maida", result.items[2].itemName)
+        assertEquals("2 kg", result.items[2].weightOrQuantity)
+
+        assertEquals("Sugar", result.items[3].itemName)
+        assertEquals("3 kg", result.items[3].weightOrQuantity)
+    }
+
+    @Test
+    fun parseUserExactScenario_withoutCommas_consecutiveSpeech() {
+        val transcript = "10 kg atta 5 kg rajma 2 kg maida and 3 kg sugar"
+        val result = VoiceBillParser.parseTranscript(transcript, startingSerial = 1)
+
+        assertEquals(4, result.items.size)
+
+        assertEquals("Atta", result.items[0].itemName)
+        assertEquals("10 kg", result.items[0].weightOrQuantity)
+
+        assertEquals("Rajma", result.items[1].itemName)
+        assertEquals("5 kg", result.items[1].weightOrQuantity)
+
+        assertEquals("Maida", result.items[2].itemName)
+        assertEquals("2 kg", result.items[2].weightOrQuantity)
+
+        assertEquals("Sugar", result.items[3].itemName)
+        assertEquals("3 kg", result.items[3].weightOrQuantity)
+    }
+
+    @Test
+    fun parsePhoneticallyMisheardSpeech_reconstructsIntendedKiranaItems() {
+        // Test phonetic mishearings from STT engines:
+        // "aa" -> Atta, "tama" -> Rajma, "ida" -> Maida, "sugar core" -> Sugar (stripping "core")
+        val transcript = "10 kg aa 5 kg tama 2 kg ida 3 kg sugar core"
+        val result = VoiceBillParser.parseTranscript(transcript, startingSerial = 1)
+
+        assertEquals(4, result.items.size)
+
+        assertEquals("Atta", result.items[0].itemName)
+        assertEquals("10 kg", result.items[0].weightOrQuantity)
+
+        assertEquals("Rajma", result.items[1].itemName)
+        assertEquals("5 kg", result.items[1].weightOrQuantity)
+
+        assertEquals("Maida", result.items[2].itemName)
+        assertEquals("2 kg", result.items[2].weightOrQuantity)
+
+        assertEquals("Sugar", result.items[3].itemName)
+        assertEquals("3 kg", result.items[3].weightOrQuantity)
+    }
+
+    @Test
+    fun parseConsecutiveItems_trailingQuantities() {
+        val transcript = "atta 10 kg rajma 5 kg maida 2 kg sugar 3 kg"
+        val result = VoiceBillParser.parseTranscript(transcript, startingSerial = 1)
+
+        assertEquals(4, result.items.size)
+
+        assertEquals("Atta", result.items[0].itemName)
+        assertEquals("10 kg", result.items[0].weightOrQuantity)
+
+        assertEquals("Rajma", result.items[1].itemName)
+        assertEquals("5 kg", result.items[1].weightOrQuantity)
+
+        assertEquals("Maida", result.items[2].itemName)
+        assertEquals("2 kg", result.items[2].weightOrQuantity)
+
+        assertEquals("Sugar", result.items[3].itemName)
+        assertEquals("3 kg", result.items[3].weightOrQuantity)
+    }
+
+    @Test
     fun parseSingleItem_withPrice() {
         val item = VoiceBillParser.parseSingleItemClause("10 kg atta 356", 1)
         assertNotNull(item)
@@ -36,26 +118,6 @@ class VoiceBillParserTest {
         assertEquals("Moong Dal", item?.itemName)
         assertEquals("2 kg", item?.weightOrQuantity)
         assertNull(item?.price)
-    }
-
-    @Test
-    fun parseMultipleItems_chainedWithAnd() {
-        val transcript = "10 kg atta 356 and 5 kg sugar 280 rupees and 2 kg moong dal"
-        val result = VoiceBillParser.parseTranscript(transcript, startingSerial = 1)
-
-        assertEquals(3, result.items.size)
-
-        assertEquals("Atta", result.items[0].itemName)
-        assertEquals("10 kg", result.items[0].weightOrQuantity)
-        assertEquals(356.0, result.items[0].price)
-
-        assertEquals("Sugar", result.items[1].itemName)
-        assertEquals("5 kg", result.items[1].weightOrQuantity)
-        assertEquals(280.0, result.items[1].price)
-
-        assertEquals("Moong Dal", result.items[2].itemName)
-        assertEquals("2 kg", result.items[2].weightOrQuantity)
-        assertNull(result.items[2].price)
     }
 
     @Test

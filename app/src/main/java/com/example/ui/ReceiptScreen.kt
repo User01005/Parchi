@@ -105,14 +105,14 @@ fun ReceiptScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFE8E9ED))
+            .background(Color(0xFFF7F8FB))
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Top Navigation Bar: Minimal back button
+            // Top Navigation Bar: Squircle back button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -120,32 +120,32 @@ fun ReceiptScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Back Button
+                // Back Button (Squircle)
                 IconButton(
                     onClick = { viewModel.navigateToHome() },
                     modifier = Modifier
                         .size(38.dp)
-                        .shadow(2.dp, CircleShape, spotColor = Color(0x14000000))
-                        .clip(CircleShape)
+                        .shadow(2.dp, RoundedCornerShape(12.dp), spotColor = Color(0x14000000))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(Color.White)
-                        .border(1.dp, Color(0xFFD4D4D8), CircleShape)
+                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
                         .testTag("receipt_top_back_button")
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back to home",
-                        tint = Color(0xFF18181B),
+                        tint = Color(0xFF0F172A),
                         modifier = Modifier.size(18.dp)
                     )
                 }
 
-                // Status pill or title
+                // Status pill or title (Squircle)
                 if (uiState.isProcessing) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFF18181B))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF0F172A))
+                            .padding(horizontal = 12.dp, vertical = 5.dp)
                     ) {
                         Text(
                             text = "CREATING RECEIPT...",
@@ -158,9 +158,10 @@ fun ReceiptScreen(
                 } else if (uiState.isListening) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFFFEE2E2))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFFFE4E6))
+                            .border(1.dp, Color(0xFFFECDD3), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 5.dp)
                     ) {
                         Text(
                             text = "● RECORDING...",
@@ -172,12 +173,12 @@ fun ReceiptScreen(
                     }
                 } else {
                     Text(
-                        text = "RECEIPT",
+                        text = "PARCHI RECEIPT",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
                         letterSpacing = 1.sp,
-                        color = Color(0xFFA1A1AA)
+                        color = Color(0xFF64748B)
                     )
                 }
 
@@ -199,6 +200,7 @@ fun ReceiptScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     MinimalThermalReceiptContent(
+                        storeName = uiState.storeName,
                         dateTime = uiState.formattedDateTime,
                         billNumber = uiState.billNumber,
                         customerName = uiState.customerName,

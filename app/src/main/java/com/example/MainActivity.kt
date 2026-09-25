@@ -14,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.AppScreen
 import com.example.ui.BillViewModel
 import com.example.ui.HomeScreen
+import com.example.ui.OnboardingScreen
 import com.example.ui.ReceiptScreen
 import com.example.ui.theme.MyApplicationTheme
 
@@ -38,6 +39,14 @@ class MainActivity : ComponentActivity() {
           modifier = Modifier.fillMaxSize()
         ) { screen ->
           when (screen) {
+            AppScreen.Onboarding -> {
+              OnboardingScreen(
+                onComplete = { name, cat, phone ->
+                  billViewModel.completeOnboarding(name, cat, phone)
+                },
+                modifier = Modifier.fillMaxSize()
+              )
+            }
             AppScreen.Home -> {
               HomeScreen(
                 viewModel = billViewModel,

@@ -202,11 +202,11 @@ class VoiceInputManager(
             // 1. Language Model: Free-form dictation
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
 
-            // 2. Bilingual configuration: support both English (India) and Hindi (India)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-IN")
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en-IN")
+            // 2. Bilingual configuration: prioritize Hindi (India) with seamless English (India)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
             putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
-            putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-IN", "hi-IN", "en-US"))
+            putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("hi-IN", "en-IN", "hi-Latn", "en-US"))
 
             // 3. Attribution & continuous dictation configuration
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)

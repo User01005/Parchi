@@ -18,7 +18,7 @@ class ExampleRobolectricTest {
   fun `read string from context`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val appName = context.getString(R.string.app_name)
-    assertEquals("Manmohan Di Hatti", appName)
+    assertEquals("PARCHI", appName)
   }
 
   @Test
@@ -34,7 +34,7 @@ class ExampleRobolectricTest {
     assertEquals("10 kg", result.items[0].weightOrQuantity)
     assertEquals(356.0, result.items[0].price)
 
-    assertEquals("Cheeni", result.items[1].itemName)
+    assertEquals("Sugar", result.items[1].itemName)
     assertEquals("5 kg", result.items[1].weightOrQuantity)
     assertEquals(200.0, result.items[1].price)
   }
@@ -45,7 +45,7 @@ class ExampleRobolectricTest {
     val result = VoiceBillParser.parseTranscript(input)
 
     assertEquals(2, result.items.size)
-    assertEquals("Dahi", result.items[0].itemName)
+    assertEquals("Curd", result.items[0].itemName)
     assertEquals(50.0, result.items[0].price)
 
     assertEquals("Jeera", result.items[1].itemName)
@@ -72,10 +72,10 @@ class ExampleRobolectricTest {
     val result = VoiceBillParser.parseTranscript(input)
 
     assertEquals(3, result.items.size)
-    assertEquals("Aata", result.items[0].itemName)
+    assertEquals("Atta", result.items[0].itemName)
     assertEquals("10 kg", result.items[0].weightOrQuantity)
 
-    assertEquals("Cheeni", result.items[1].itemName)
+    assertEquals("Sugar", result.items[1].itemName)
     assertEquals("10 kg", result.items[1].weightOrQuantity)
 
     assertEquals("Brush", result.items[2].itemName)
@@ -98,7 +98,7 @@ class ExampleRobolectricTest {
     val result = VoiceBillParser.parseTranscript(input)
 
     assertEquals(2, result.items.size)
-    assertEquals("Aata", result.items[0].itemName)
+    assertEquals("Atta", result.items[0].itemName)
     assertEquals("10 kg", result.items[0].weightOrQuantity)
 
     assertEquals("Brush", result.items[1].itemName)

@@ -202,9 +202,9 @@ fun RippleRecordButton(
                     modifier = Modifier
                         .size(64.dp)
                         .scale(ripple3Scale)
-                        .clip(CircleShape)
+                        .clip(RoundedCornerShape(26.dp))
                         .background(MicRecordRed.copy(alpha = ripple3Alpha))
-                        .border(1.5.dp, Color(0xFFF43F5E).copy(alpha = ripple3Alpha), CircleShape)
+                        .border(1.5.dp, Color(0xFFF43F5E).copy(alpha = ripple3Alpha), RoundedCornerShape(26.dp))
                 )
 
                 // Wave 2 (middle ring)
@@ -212,9 +212,9 @@ fun RippleRecordButton(
                     modifier = Modifier
                         .size(64.dp)
                         .scale(ripple2Scale)
-                        .clip(CircleShape)
+                        .clip(RoundedCornerShape(24.dp))
                         .background(MicRecordRed.copy(alpha = ripple2Alpha))
-                        .border(1.8.dp, Color(0xFFFB7185).copy(alpha = ripple2Alpha), CircleShape)
+                        .border(1.8.dp, Color(0xFFFB7185).copy(alpha = ripple2Alpha), RoundedCornerShape(24.dp))
                 )
 
                 // Wave 1 (inner core ring)
@@ -222,9 +222,9 @@ fun RippleRecordButton(
                     modifier = Modifier
                         .size(64.dp)
                         .scale(ripple1Scale)
-                        .clip(CircleShape)
+                        .clip(RoundedCornerShape(22.dp))
                         .background(MicRecordRed.copy(alpha = ripple1Alpha))
-                        .border(2.dp, Color.White.copy(alpha = ripple1Alpha), CircleShape)
+                        .border(2.dp, Color.White.copy(alpha = ripple1Alpha), RoundedCornerShape(22.dp))
                 )
             }
 
@@ -233,16 +233,16 @@ fun RippleRecordButton(
                 modifier = Modifier
                     .size(68.dp)
                     .offset { IntOffset(0, 4.dp.roundToPx()) }
-                    .clip(CircleShape)
+                    .clip(RoundedCornerShape(22.dp))
                     .background(Color.Black.copy(alpha = 0.25f))
             )
 
-            // Main Core Record Button
+            // Main Core Record Button (Squircle)
             Box(
                 modifier = Modifier
                     .size(68.dp)
                     .scale(if (isListening) pulseScale * buttonScale else buttonScale)
-                    .clip(CircleShape)
+                    .clip(RoundedCornerShape(22.dp))
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
@@ -254,7 +254,7 @@ fun RippleRecordButton(
                     .border(
                         width = if (isListening) 3.dp else 2.dp,
                         color = if (isListening) Color(0xFFFFF1F2) else Color(0xFFFF8599),
-                        shape = CircleShape
+                        shape = RoundedCornerShape(22.dp)
                     )
                     .clickable(
                         interactionSource = interactionSource,

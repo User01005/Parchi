@@ -1,6 +1,6 @@
 {
-  "name": "Manmohan Di Hatti",
-  "description": "Voice billing and thermal POS app for Manmohan Di Hatti kirana store.",
+  "name": "PARCHI",
+  "description": "Kirana Voice Billing POS app for fast voice dictation and thermal receipts.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
